@@ -1,13 +1,15 @@
-# accounts/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import UserViewSet, MyTokenObtainPairView
 
-# Create a router and register the viewsets
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 
-# The API URLs are now determined automatically by the router
+
+
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', include(router.urls)), 
+    path('login/', MyTokenObtainPairView.as_view(), name='login'),
+    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
