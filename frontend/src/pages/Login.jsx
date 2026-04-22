@@ -37,15 +37,6 @@ function Login() {
         alert("Unknown role: " + role);
      }
 
-//
-      //if (role === "student") {
-      //  navigate("/student");
-     // } else if (role === "admin") {
-      //  navigate("/admin");
-      //} else {
-      //  alert("Logged in! But dashboard for " + role + " is missing.");
-     // }
-
     } catch (error) {
       if (error.response) {
         // Django rejected the credentials

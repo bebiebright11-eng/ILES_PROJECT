@@ -8,6 +8,11 @@ class OrganizationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ApplicationSerializer(serializers.ModelSerializer):
+        # 🔥 ADD: organization name
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+
+    # 🔥 ADD: student name
+    student_name = serializers.CharField(source='student.username', read_only=True)
     class Meta:
         model = Application
         fields = '__all__'
@@ -15,6 +20,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
         read_only_fields = ['student']
 
 class PlacementSerializer(serializers.ModelSerializer):
+        # 🔥 ADD: organization name
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+
+    # 🔥 ADD: student name
+    student_name = serializers.CharField(source='student.username', read_only=True)
     class Meta:
         model = Placement
         fields = '__all__'

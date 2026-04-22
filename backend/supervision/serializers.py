@@ -3,10 +3,14 @@ from .models import WeeklyLog, Evaluation, EvaluationCriteria, CriteriaScore
 
 
 class WeeklyLogSerializer(serializers.ModelSerializer):
+                # 🔥 ADD THIS: show student name instead of ID
+    student_name = serializers.CharField(source='placement.student.username', read_only=True)
+
+    # 🔥 ADD THIS: show organization name
+    organization_name = serializers.CharField(source='placement.organization.name', read_only=True)
     class Meta:
         model = WeeklyLog
         fields = '__all__'
-
 
 class EvaluationCriteriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,6 +25,14 @@ class CriteriaScoreSerializer(serializers.ModelSerializer):
 
 
 class EvaluationSerializer(serializers.ModelSerializer):
+        # 🔥 ADD: student name
+    student_name = serializers.CharField(source='placement.student.username', read_only=True)
+
+    # 🔥 ADD: organization name
+    organization_name = serializers.CharField(source='placement.organization.name', read_only=True)
+
+    # 🔥 ADD: supervisor name
+    supervisor_name = serializers.CharField(source='supervisor.username', read_only=True)
     # 🔥 ADD THIS LINE
     supervisor = serializers.HiddenField(default=serializers.CurrentUserDefault())
     criteria_scores = CriteriaScoreSerializer(many=True)
