@@ -99,10 +99,10 @@ function WorkplaceDashboard() {
       ) : (
         placements.map((p) => (
           <div key={p.id} style={{ border: "1px solid black", margin: "10px", padding: "10px" }}>
-            <h3>Student: {p.student}</h3>
-            <p>Organization: {p.organization}</p>
+            <h3><strong>Student: </strong>{p.student_name || p.student}</h3>
+            <p><strong>Organization: </strong>{p.organization_name || p.organization}</p>
 
-            <h4>Evaluation</h4>
+            <h4><strong>Evaluation: </strong></h4>
 
             {criteria.map((c) => (
               <div key={c.id}>

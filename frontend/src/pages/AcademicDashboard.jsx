@@ -130,15 +130,15 @@ function AcademicDashboard() {
                 padding: "10px",
               }}
             >
-              <h3>Student: {p.student}</h3>
-              <p>Organization: {p.organization}</p>
+              <h3><strong>Student: </strong>{p.student_name || p.student}</h3>
+              <p><strong>Organization: </strong>{p.organization_name || p.organization}</p>
 
               {/* 🔹 SHOW WORKPLACE EVALUATION */}
               <h4>Workplace Evaluation</h4>
               {workplaceEval ? (
                 <div>
-                  <p>Total Score: {workplaceEval.score}</p>
-                  <p>Comments: {workplaceEval.comments}</p>
+                  <p><strong>Total Score: </strong>{workplaceEval.score}</p>
+                  <p><strong>Comments: </strong>{workplaceEval.comments}</p>
                 </div>
               ) : (
                 <p>No workplace evaluation yet</p>

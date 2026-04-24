@@ -75,7 +75,7 @@ class CriteriaScore(models.Model):
     evaluation = models.ForeignKey(
         Evaluation,
         on_delete=models.CASCADE,
-        related_name='criteria_scores'   # ✅ VERY IMPORTANT
+        related_name='criteria_scores' 
     )
     criteria = models.ForeignKey(EvaluationCriteria, on_delete=models.CASCADE)
     score = models.IntegerField()
