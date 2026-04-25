@@ -8,7 +8,6 @@ User = settings.AUTH_USER_MODEL
 class WeeklyLog(models.Model):
 
     STATUS_CHOICES = (
-        ('draft', 'Draft'),
         ('submitted', 'Submitted'),
         ('reviewed', 'Reviewed'),
     )
@@ -25,7 +24,7 @@ class WeeklyLog(models.Model):
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
 
     class Meta:
         unique_together = ['placement', 'week_number']

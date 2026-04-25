@@ -37,6 +37,16 @@ class EvaluationSerializer(serializers.ModelSerializer):
     supervisor = serializers.HiddenField(default=serializers.CurrentUserDefault())
     criteria_scores = CriteriaScoreSerializer(many=True)
 
+    def get_log_score(self, placement):
+        logs = WeeklyLog.objects.filter(
+            placement=placement,
+            status='reviewed'
+        ).count()
+
+        score = logs * 2.5
+
+        return min(score, 20)  # cap at 20
+
     class Meta:
         model = Evaluation
         fields = [
@@ -49,30 +59,49 @@ class EvaluationSerializer(serializers.ModelSerializer):
             'final_grade',
             'is_final',
             'criteria_scores'
+            'student_name',
+            'organization_name',
+            'supervisor_name'
         ]
 
     def create(self, validated_data):
-        criteria_data = validated_data.pop('criteria_scores')
+        criteria_data = validated_data.pop('criteria_scores', [])
         evaluation = Evaluation.objects.create(**validated_data)
 
         total = 0
 
-        for item in criteria_data:
-            CriteriaScore.objects.create(
-                evaluation=evaluation,
-                criteria=item['criteria'],
-                score=item['score']
-            )
-            total += item['score']
+    # 🔵 Workplace Supervisor → Criteria scoring (60)
+        if evaluation.supervisor_type == 'workplace':
+            for item in criteria_data:
+                CriteriaScore.objects.create(
+                   evaluation=evaluation,
+                   criteria=item['criteria'],
+                   score=item['score']
+                )
+                total += item['score']
 
-        #  auto total scor
-        evaluation.score = total
+            evaluation.score = total  # out of 60
 
-        #  if academic → final
-        if evaluation.supervisor_type == 'academic':
-            evaluation.final_grade = total
-            evaluation.is_final = True
+    # 🟢 Academic Supervisor → Manual score (20)
+        elif evaluation.supervisor_type == 'academic':
+           evaluation.score = validated_data.get('score', 0)
+
+        # 🔥 ADD LOG SCORE
+           log_score = self.get_log_score(evaluation.placement)
+
+        # 🔥 GET workplace score
+           workplace_eval = Evaluation.objects.filter(
+               placement=evaluation.placement,
+               supervisor_type='workplace'
+            ).first()
+
+           workplace_score = workplace_eval.score if workplace_eval else 0
+
+        # 🎯 FINAL CALCULATION
+           final = workplace_score + log_score + evaluation.score
+
+           evaluation.final_grade = final
+           evaluation.is_final = True
 
         evaluation.save()
-
         return evaluation
