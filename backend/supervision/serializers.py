@@ -35,7 +35,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
     supervisor_name = serializers.CharField(source='supervisor.username', read_only=True)
     # 🔥 ADD THIS LINE
     supervisor = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    criteria_scores = CriteriaScoreSerializer(many=True)
+    criteria_scores = CriteriaScoreSerializer(many=True, required=False)
 
     def get_log_score(self, placement):
         logs = WeeklyLog.objects.filter(
@@ -58,7 +58,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
             'comments',
             'final_grade',
             'is_final',
-            'criteria_scores'
+            'criteria_scores',
             'student_name',
             'organization_name',
             'supervisor_name'
@@ -70,14 +70,21 @@ class EvaluationSerializer(serializers.ModelSerializer):
 
         total = 0
 
+
+
     # 🔵 Workplace Supervisor → Criteria scoring (60)
         if evaluation.supervisor_type == 'workplace':
             for item in criteria_data:
-                CriteriaScore.objects.create(
-                   evaluation=evaluation,
-                   criteria=item['criteria'],
-                   score=item['score']
+                score_obj = CriteriaScore(
+                    evaluation=evaluation,
+                    criteria=item['criteria'],
+                    score=item['score']
                 )
+
+                score_obj.full_clean()  # 🔥 VALIDATION
+                score_obj.save()
+
+
                 total += item['score']
 
             evaluation.score = total  # out of 60
@@ -94,9 +101,12 @@ class EvaluationSerializer(serializers.ModelSerializer):
                placement=evaluation.placement,
                supervisor_type='workplace'
             ).first()
+           if not workplace_eval:
+               raise serializers.ValidationError("Workplace evaluation must be completed first")
 
-           workplace_score = workplace_eval.score if workplace_eval else 0
+           workplace_score = workplace_eval.score
 
+           
         # 🎯 FINAL CALCULATION
            final = workplace_score + log_score + evaluation.score
 

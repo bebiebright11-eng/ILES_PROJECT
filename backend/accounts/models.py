@@ -17,5 +17,13 @@ class User(AbstractUser):
     email = models.EmailField(max_length=255, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True)
 
+    # 🔥 link supervisor to organization
+    organization = models.ForeignKey(
+        'internships.Organization',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return f"{self.username} ({self.role})"

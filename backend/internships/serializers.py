@@ -23,6 +23,10 @@ class PlacementSerializer(serializers.ModelSerializer):
         # 🔥 ADD: organization name
     organization_name = serializers.CharField(source='organization.name', read_only=True)
 
+    is_fully_assigned = serializers.ReadOnlyField()
+    workplace_supervisor_name = serializers.CharField(source='workplace_supervisor.username', read_only=True)
+    academic_supervisor_name = serializers.CharField(source='academic_supervisor.username', read_only=True)
+
     # 🔥 ADD: student name
     student_name = serializers.CharField(source='student.username', read_only=True)
     class Meta:

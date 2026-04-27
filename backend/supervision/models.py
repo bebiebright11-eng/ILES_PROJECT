@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from internships.models import Placement
+from django.core.exceptions import ValidationError
 
 User = settings.AUTH_USER_MODEL
 
@@ -78,6 +79,10 @@ class CriteriaScore(models.Model):
     )
     criteria = models.ForeignKey(EvaluationCriteria, on_delete=models.CASCADE)
     score = models.IntegerField()
+
+    def clean(self):
+        if self.score > self.criteria.max_score:
+            raise ValidationError(f"Score cannot exceed {self.criteria.max_score}")
 
     def __str__(self):
         return f"{self.criteria} - {self.score}"

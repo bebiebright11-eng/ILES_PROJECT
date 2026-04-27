@@ -207,16 +207,15 @@ const submitLog = async (e) => {
 
   return (
     <div style={{ padding: "20px" }}>
-       <h1 style={{ textAlign: "center", marginBottom: "10px" }}>
+       <h1 style={{textAlign: "centre",marginBottom: "10px" }}>
         Internship Placement System (ILES)
        </h1>
 
        <h2 style={{ marginBottom: "5px" }}>Student Dashboard</h2>
 
-       <p style={{ fontWeight: "bold", marginTop: "0px" }}>
+       <p style={{ fontWeight: "bold", marginTop: "10px" }}>
           Welcome, Student
        </p>
-
 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
   
   <button 
@@ -244,10 +243,10 @@ const submitLog = async (e) => {
     marginTop: "10px",   // 👈 THIS IS THE FIX
     marginBottom: "10px",
     background: "white",
-    border: "1px solid #f36e6e",
+    border: "1px solid #f51b1b",
     padding: "10px",
     width: "200px",
-    boxShadow: "0px 2px 8px rgba(41, 14, 14, 0.2)",
+    boxShadow: "0px 2px 8px rgba(51, 32, 32, 0.2)",
     borderRadius: "8px",
     zIndex: 999
   }}>
@@ -323,7 +322,7 @@ const submitLog = async (e) => {
 
       {/* PLACEMENT STATUS SECTION */}
       <div style={{
-        border: "2px solid #ee9714",
+        border: "2px solid #f1950b",
         padding: "15px",
         marginBottom: "25px",
         borderRadius: "10px",
