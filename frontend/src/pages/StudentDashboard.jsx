@@ -15,6 +15,20 @@ function StudentDashboard() {
   const [organizations, setOrganizations] = useState([]);
   // NEW: Store student's placement 
   const [placement, setPlacement] = useState(null);
+
+
+
+  const getReviewedLogsCount = () => {
+    return logs.filter(log => log.status === "reviewed").length;
+  };
+
+  const getLogScore = () => {
+    const reviewed = getReviewedLogsCount();
+    return Math.min(reviewed * 2.5, 20);
+  };
+
+
+
   
 
   //  NEW: store form inputs for weekly log
@@ -33,6 +47,19 @@ const menuItemStyle = {
   borderRadius: "5px",
   marginBottom: "5px",
   transition: "0.2s",
+};
+
+const cardStyle = {
+  flex: "1",
+  minWidth: "120px",   // reduced from 150+
+  maxWidth: "120px",   // prevents cards from stretching too big
+  background: "#ebc6eb",  // lighter background
+  padding: "10px",     // reduced padding
+  borderRadius: "8px",
+  border: "1px solid #d48fd4",
+  boxShadow: "0px 1px 4px hsla(0, 66%, 75%, 0.08)", // softer shadow
+  textAlign: "center",
+  fontSize: "14px"     // smaller text
 };
 
 
@@ -180,16 +207,15 @@ const submitLog = async (e) => {
 
   return (
     <div style={{ padding: "20px" }}>
-       <h1 style={{ textAlign: "center", marginBottom: "10px" }}>
+       <h1 style={{textAlign: "centre",marginBottom: "10px" }}>
         Internship Placement System (ILES)
        </h1>
 
        <h2 style={{ marginBottom: "5px" }}>Student Dashboard</h2>
 
-       <p style={{ fontWeight: "bold", marginTop: "0px" }}>
+       <p style={{ fontWeight: "bold", marginTop: "10px" }}>
           Welcome, Student
        </p>
-
 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
   
   <button 
@@ -211,19 +237,16 @@ const submitLog = async (e) => {
 
 </div>
 
-
-         
-         
 {menuOpen && (
   <div style={{
     position: "absolute",
     marginTop: "10px",   // 👈 THIS IS THE FIX
     marginBottom: "10px",
     background: "white",
-    border: "1px solid #ccc",
+    border: "1px solid #f51b1b",
     padding: "10px",
     width: "200px",
-    boxShadow: "0px 2px 8px rgba(0,0,0,0.2)",
+    boxShadow: "0px 2px 8px rgba(51, 32, 32, 0.2)",
     borderRadius: "8px",
     zIndex: 999
   }}>
@@ -254,13 +277,80 @@ const submitLog = async (e) => {
         {activeView === "home" && (
           <>
 
+
+         <div style={{
+  display: "flex",
+  gap: "10px",
+  marginBottom: "15px",
+  flexWrap: "wrap",
+}}>
+
+  <div style={cardStyle}>
+    <h4 style={{ margin: "5px 0" }}>📘 Logs</h4>
+    <p style={{ fontSize: "18px", fontWeight: "bold", margin: "0" }}>
+       {logs.length}
+    </p>
+  </div>
+
+  <div style={cardStyle}>
+    <h4 style={{ margin: "5px 0" }}>✅Approved</h4>
+    <p style={{ fontSize: "18px", fontWeight: "bold", margin: "0" }}>
+       {applications.length}
+    </p>
+  </div>
+
+  <div style={cardStyle}>
+    <h4 style={{ margin: "5px 0" }}>📝 Applications</h4>
+    <p style={{ fontSize: "18px", fontWeight: "bold", margin: "0" }}>
+       <p>{applications.filter(a=>a.status==="approved").length}</p>
+    </p>
+  </div>
+
+  <div style={cardStyle}>
+    <h4 style={{ margin: "5px 0" }}>📊 Evaluations</h4>
+    <p style={{ fontSize: "16px", fontWeight: "bold", margin: "0" }}>
+       {evaluations.length}
+    </p>
+  </div>
+  </div>
+
+
+
+
+
+
+
       {/* PLACEMENT STATUS SECTION */}
-      <div style={{ border: "2px solid orange", padding: "10px", marginBottom: "20px" }}>
-        <h2>My Placement</h2>
+      <div style={{
+        border: "2px solid #f1950b",
+        padding: "15px",
+        marginBottom: "25px",
+        borderRadius: "10px",
+        backgroundColor: "#fff8e1"  // soft highlight
+   }}>
+       <h2 style={{ textAlign: "center", marginTop: "0" }}> My Placement</h2>    
         {placement ? (
           <>
             <p><strong>Organization:</strong> {placement.organization_name || placement.organization}</p>
-            <p><strong>Status:</strong> {placement.status}</p>
+            <p>
+  <strong>Status:</strong>
+  <span style={{
+    color:
+      placement.status === "active"
+        ? "green"
+        : placement.status === "completed"
+        ? "blue"
+        : "orange",
+    fontWeight: "bold",
+    marginLeft: "5px"
+  }}>
+    {placement.status === "active"
+      ? "Active 🟢"
+      : placement.status === "completed"
+      ? "Completed ✅"
+      : "Not Started ⏳"}
+  </span>
+</p>
             <p><strong>Start Date:</strong> {placement.start_date || "Not set"}</p>
             <p><strong>End Date:</strong> {placement.end_date || "Not set"}</p>
           </>
@@ -321,16 +411,40 @@ const submitLog = async (e) => {
       {logs.length === 0 ? (
         <p>No logs yet</p>
       ) : (
-        logs.map((log) => (
+        logs
+          .sort((a, b) => a.week_number - b.week_number)
+          .map((log) => (
+            
           <div key={log.id} style={{ border: "1px solid black", margin: "10px", padding: "10px" }}>
             <p>Week: {log.week_number}</p>
             <p>Organization: {log.organization_name}</p>
             <p>Student: {log.student_name}</p>
             <p>Tasks: {log.tasks}</p>
-            <p>Status: {log.status}</p>
+            <p>Status: {log.status}  <span style={{
+    color: log.status === "reviewed" ? "green" : "orange",
+    fontWeight: "bold"
+  }}>
+    {log.status === "reviewed" ? "Reviewed ✅" : "Pending ⏳"}
+  </span></p>
           </div>
         ))
       )}
+
+      <div style={{
+  marginTop: "30px",
+  padding: "15px",
+  backgroundColor: "#f1eaea",
+  borderLeft: "5px solid #066ad6",
+  borderRadius: "6px"
+}}>
+  <h3>Important Notes</h3>
+
+  <p>• At least <strong>8 weekly logs</strong> should be submitted for this placement.</p>
+
+  <p>• This placement will be evaluated based on <strong>evaluation criteria</strong> including performance, punctuality, and professionalism.</p>
+
+  <p>• Ensure all logs are submitted on time and accurately reflect your weekly activities.</p>
+</div>
 
         </>
     )}
@@ -365,7 +479,57 @@ const submitLog = async (e) => {
             <p>Organization: {ev.organization_name}</p>
             <p>Supervisor: {ev.supervisor_name}</p>
             <p>Role: {ev.supervisor_type}</p>
-            <p>Score: {ev.score}</p>
+            
+            
+            <div key={ev.id} style={{
+  border: "1px solid #4caf50",
+  margin: "15px",
+  padding: "15px",
+  borderRadius: "10px",
+  backgroundColor: "#f9fff9"
+}}>
+
+  <p style={{textAlign: "center"}}>
+    Supervisor: {ev.supervisor_name} ({ev.supervisor_type})
+  </p>
+
+  {/* WORKPLACE SCORE */}
+  {ev.supervisor_type === "workplace" && (
+    <>
+      <h4>🔵 Workplace Evaluation</h4>
+
+      {ev.criteria_scores?.map((cs, index) => (
+        <p key={index}>
+          {cs.criteria_name || cs.criteria}: {cs.score}
+        </p>
+      ))}
+
+      <p><strong>Total:</strong> {ev.score} / 60</p>
+    </>
+  )}
+
+  {/* ACADEMIC SCORE */}
+  {ev.supervisor_type === "academic" && (
+    <>
+      <h4>🧑‍🏫 Academic Evaluation</h4>
+
+      <p><strong>Logs Score:</strong> {getLogScore()} / 20</p>
+      <p><strong>Reviewed Logs:</strong> {getReviewedLogsCount()}</p>
+
+      <p><strong>Academic Score:</strong> {ev.score} / 20</p>
+
+      <hr />
+
+      <h3>🎯 Final Score: {ev.final_grade}%</h3>
+    </>
+  )}
+
+  <p><strong>Comments:</strong> {ev.comments}</p>
+
+</div>
+
+
+
             <p>Comments: {ev.comments}</p>
             <p>Final Grade: {ev.final_grade || "Not finalised"}</p>
           </div>

@@ -22,12 +22,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.save()
 
-        # 🔥 CREATE PLACEMENT WHEN APPROVED
-        if instance.status == 'approved':
-            Placement.objects.get_or_create(
-                student=instance.student,
-                organization=instance.organization
-            )
         # 🔥 Reject all other applications of this student
         Application.objects.filter(
             student=instance.student

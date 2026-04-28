@@ -6,6 +6,20 @@ function WorkplaceDashboard() {
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
 
+
+const [activeEvaluation, setActiveEvaluation] = useState(null);
+const [submittedEvaluations, setSubmittedEvaluations] = useState({});
+const [comments, setComments] = useState({});
+
+
+//Ui design
+const [showMenu, setShowMenu] = useState(false);
+const totalStudents = placements.length;
+const evaluatedStudents = Object.keys(submittedEvaluations).length;
+const pendingStudents = totalStudents - evaluatedStudents;
+
+
+
   // 🔹 Fetch students assigned to this workplace supervisor
   const fetchPlacements = async () => {
     try {
@@ -29,7 +43,7 @@ function WorkplaceDashboard() {
   // 🔹 Fetch evaluation criteria
   const fetchCriteria = async () => {
     try {
-      const res = await API.get("supervision/evaluationcriteria/", {
+      const res = await API.get("supervision/criteria/", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -40,6 +54,14 @@ function WorkplaceDashboard() {
       console.log(error);
     }
   };
+  const cardStyle = {
+  border: "1px solid green",
+  padding: "10px",
+  borderRadius: "10px",
+  width: "120px",
+  textAlign: "center",
+};
+
 
   useEffect(() => {
     fetchPlacements();
@@ -47,89 +69,242 @@ function WorkplaceDashboard() {
   }, []);
 
   // 🔹 Handle input change
-  const handleScoreChange = (placementId, criteriaId, value) => {
-    setScores((prev) => ({
-      ...prev,
-      [placementId]: {
-        ...prev[placementId],
-        [criteriaId]: parseInt(value),
-      },
-    }));
-  };
+const handleScoreChange = (placementId, criteriaId, value, maxScore) => {
+  let numericValue = parseInt(value) || 0;
+
+  // 🚫 prevent negative
+  if (numericValue < 0) numericValue = 0;
+
+  // 🚫 prevent above max
+  if (numericValue > maxScore) {
+    numericValue = maxScore;
+    alert(`Score cannot exceed ${maxScore}`);
+  }
+
+  setScores((prev) => ({
+    ...prev,
+    [placementId]: {
+      ...prev[placementId],
+      [criteriaId]: numericValue,
+    },
+  }));
+};
 
   // 🔹 Submit evaluation
   const submitEvaluation = async (placementId) => {
-    try {
-      const criteriaScores = Object.entries(scores[placementId] || {}).map(
-        ([criteriaId, score]) => ({
-          criteria: parseInt(criteriaId),
-          score: score,
-        })
-      );
+  const studentScores = scores[placementId];
 
-      await API.post(
-        "supervision/evaluations/",
-        {
-          placement: placementId,
-          supervisor_type: "workplace",
-          comments: "Workplace evaluation submitted",
-          criteria_scores: criteriaScores,
+  if (!studentScores || Object.keys(studentScores).length !== criteria.length) {
+    alert("Please fill all criteria");
+    return;
+  }
+
+  try {
+    const criteriaScores = Object.entries(studentScores).map(
+      ([criteriaId, score]) => ({
+        criteria: parseInt(criteriaId),
+        score: score,
+      })
+    );
+
+    await API.post(
+      "supervision/evaluations/",
+      {
+        placement: placementId,
+        supervisor_type: "workplace",
+        comments: comments[placementId] || "",
+        criteria_scores: criteriaScores,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      }
+    );
 
-      alert("Evaluation submitted!");
-    }catch (error) {
-      console.log("FULL ERROR:", error);
-      console.log("BACKEND RESPONSE:", error.response?.data);
-      alert(JSON.stringify(error.response?.data));
-    }
-  };
+    // ✅ mark as submitted
+    setSubmittedEvaluations((prev) => ({
+      ...prev,
+      [placementId]: true,
+    }));
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h1>Workplace Supervisor Dashboard</h1>
+    // ✅ close form
+    setActiveEvaluation(null);
 
-      {placements.length === 0 ? (
-        <p>No students assigned</p>
-      ) : (
-        placements.map((p) => (
-          <div key={p.id} style={{ border: "1px solid black", margin: "10px", padding: "10px" }}>
-            <h3><strong>Student: </strong>{p.student_name || p.student}</h3>
-            <p><strong>Organization: </strong>{p.organization_name || p.organization}</p>
+  } catch (error) {
+  console.log("ERROR:", error.response?.data);
 
-            <h4><strong>Evaluation: </strong></h4>
+  // ✅ CASE 1: Already submitted
+  if (
+    error.response?.data?.non_field_errors &&
+    error.response.data.non_field_errors[0].includes("unique")
+  ) {
+    alert("This student has already been evaluated.");
 
-            {criteria.map((c) => (
-              <div key={c.id}>
-                <label>
-                  {c.name} (Max: {c.max_score})
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max={c.max_score}
-                  onChange={(e) =>
-                    handleScoreChange(p.id, c.id, e.target.value)
-                  }
-                />
-              </div>
-            ))}
+    // 🔥 Mark as submitted in UI
+    setSubmittedEvaluations((prev) => ({
+      ...prev,
+      [placementId]: true,
+    }));
 
-            <br />
+    // 🔥 Close the form
+    setActiveEvaluation(null);
 
-            <button onClick={() => submitEvaluation(p.id)}>
-              Submit Evaluation
-            </button>
-          </div>
-        ))
-      )}
-    </div>
-  );
+    return;
+  }
+
+  // ❌ Other errors
+  alert("Submission failed. Try again.");
 }
+};
 
+return (
+  <div style={{ padding: "20px", fontFamily: "Arial", position: "relative" }}>
+
+    <h1 style={{ textAlign: "center" }}>
+      Workplace Dashboard
+    </h1>
+
+    <p>Welcome, {localStorage.getItem("username")}</p>
+
+    {/* 🔹 MENU BUTTON */}
+    <div
+      style={{ cursor: "pointer",marginLeft:"20px", marginBottom: "10px",textAlign: "left" }}
+      onClick={() => setShowMenu(!showMenu)}
+    >
+      ☰ Menu
+    </div>
+
+    {/* 🔹 POPUP MENU */}
+    {showMenu && (
+      <div
+        style={{
+          position: "absolute",
+          top: "100px",
+          left: "20px",
+          width: "200px",
+          backgroundColor: "white",
+          border: "1px solid black",
+          padding: "10px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+          zIndex: 1000,
+        }}
+      >
+        <p>🏠 Home</p>
+        <p>👨‍🎓 My Students</p>
+        <p>📝 Evaluations</p>
+        <p>👤 Profile</p>
+      </div>
+    )}
+
+    {/* 🔹 SUMMARY CARDS */}
+    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+
+      <div style={cardStyle}>
+        <p>Students</p>
+        <strong>{totalStudents}</strong>
+      </div>
+
+      <div style={cardStyle}>
+        <p>Evaluated</p>
+        <strong>{evaluatedStudents}</strong>
+      </div>
+
+      <div style={cardStyle}>
+        <p>Pending</p>
+        <strong>{pendingStudents}</strong>
+      </div>
+
+    </div>
+
+    {/* 🔹 STUDENT LIST */}
+    {placements.length === 0 ? (
+      <p>No students assigned</p>
+    ) : (
+      placements.map((p) => (
+        <div key={p.id} style={{ border: "1px solid black", margin: "10px", padding: "10px" }}>
+
+          <h3><strong>Student: </strong>{p.student_name || p.student}</h3>
+          <p><strong>Organization: </strong>{p.organization_name || p.organization}</p>
+
+          {/* ADD BUTTON */}
+          {!submittedEvaluations[p.id] && (
+            <button onClick={() => setActiveEvaluation(p.id)}>
+              Add Evaluation
+            </button>
+          )}
+
+          {/* FORM */}
+          {activeEvaluation === p.id && !submittedEvaluations[p.id] && (
+            <div style={{
+              marginTop: "15px",
+              padding: "15px",
+              border: "2px solid #444",
+              borderRadius: "8px",
+              backgroundColor: "#f9f9f9",
+            }}>
+
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th>Criteria</th>
+                    <th>Max</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {criteria.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.name}</td>
+                      <td>{c.max_score}</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max={c.max_score}
+                          value={scores[p.id]?.[c.id] || ""}
+                          onChange={(e) =>
+                            handleScoreChange(p.id, c.id, e.target.value, c.max_score)
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <textarea
+                placeholder="Write comments..."
+                value={comments[p.id] || ""}
+                onChange={(e) =>
+                  setComments((prev) => ({
+                    ...prev,
+                    [p.id]: e.target.value,
+                  }))
+                }
+                rows="4"
+                style={{ width: "100%", marginTop: "10px" }}
+              />
+
+              <button onClick={() => submitEvaluation(p.id)}>
+                Submit Evaluation
+              </button>
+            </div>
+          )}
+
+          {/* AFTER SUBMIT */}
+          {submittedEvaluations[p.id] && (
+            <p style={{ color: "green" }}>
+              ✅ Evaluation Submitted
+            </p>
+          )}
+
+        </div>
+      ))
+    )}
+
+  </div>
+);
+}
 export default WorkplaceDashboard;

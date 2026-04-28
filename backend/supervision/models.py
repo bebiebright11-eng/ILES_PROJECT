@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from internships.models import Placement
+from django.core.exceptions import ValidationError
 
 User = settings.AUTH_USER_MODEL
 
@@ -8,7 +9,6 @@ User = settings.AUTH_USER_MODEL
 class WeeklyLog(models.Model):
 
     STATUS_CHOICES = (
-        ('draft', 'Draft'),
         ('submitted', 'Submitted'),
         ('reviewed', 'Reviewed'),
     )
@@ -25,7 +25,7 @@ class WeeklyLog(models.Model):
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
 
     class Meta:
         unique_together = ['placement', 'week_number']
@@ -79,6 +79,10 @@ class CriteriaScore(models.Model):
     )
     criteria = models.ForeignKey(EvaluationCriteria, on_delete=models.CASCADE)
     score = models.IntegerField()
+
+    def clean(self):
+        if self.score > self.criteria.max_score:
+            raise ValidationError(f"Score cannot exceed {self.criteria.max_score}")
 
     def __str__(self):
         return f"{self.criteria} - {self.score}"

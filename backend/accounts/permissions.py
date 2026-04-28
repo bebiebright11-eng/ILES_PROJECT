@@ -19,13 +19,13 @@ class IsAcademicSupervisor(BasePermission):
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return request.user.role == 'admin'
-    
-class IsStudentOrSupervisor(BasePermission):
+
+   # 🔥 ONLY student + academic supervisor can access logs 
+class IsStudentOrAcademic(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in [
             'student',
             'academic',
-            'workplace'
         ]
     
 class IsEvaluator(BasePermission):
@@ -33,4 +33,6 @@ class IsEvaluator(BasePermission):
         return request.user.role in [
             'academic',
             'workplace'
+            'student'
         ]
+    
