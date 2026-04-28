@@ -6,16 +6,94 @@ function AdminDashboard() {
   const [placements, setPlacements] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
 
-  // 🔥 NEW: track which application form is open
+
+const [organizations, setOrganizations] = useState([]);
+
+const [orgForm, setOrgForm] = useState({
+  name: "",
+  location: "",
+  email: "",
+  phone: "",
+  description: "",
+  website: "",
+});
+
+
+const [editingOrg, setEditingOrg] = useState(null);
+const [editForm, setEditForm] = useState({
+  name: "",
+  location: "",
+  email: "",
+  phone: "",
+  description: "",
+  website: "",
+});
+
+const startEdit = (org) => {
+  setEditingOrg(org.id);
+  setEditForm({
+    name: org.name,
+    location: org.location,
+    email: org.email,
+    phone: org.phone,
+    description: org.description,
+    website: org.website,
+  });
+};
+
+const saveEdit = async (id) => {
+  try {
+    const res = await API.patch(`organizations/${id}/`, editForm);
+
+    // update UI instantly
+    setOrganizations((prev) =>
+      prev.map((org) => (org.id === id ? res.data : org))
+    );
+
+    setEditingOrg(null);
+    alert("Organization updated!");
+  } catch (err) {
+    console.log(err.response?.data);
+    alert("Update failed");
+  }
+};
+
+const deleteOrganization = async (id) => {
+  const confirmDelete = window.confirm("Delete this organization?");
+  if (!confirmDelete) return;
+
+  try {
+    await API.delete(`organizations/${id}/`);
+
+    // remove from UI instantly
+    setOrganizations((prev) => prev.filter((org) => org.id !== id));
+
+    alert("Deleted!");
+  } catch (err) {
+    console.log(err);
+    alert("Delete failed");
+  }
+};
+
+const fetchOrganizations = async () => {
+  try {
+    const res = await API.get("internships/organizations/");
+    setOrganizations(res.data);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+  // NEW: track which application form is open
 const [activePlacementForm, setActivePlacementForm] = useState(null);
 
-// 🔥 NEW: store form input values
+// NEW: store form input values
 const [placementFormData, setPlacementFormData] = useState({
   start_date: "",
   end_date: "",
 });
 
-// 🔥 NEW: store selected supervisors per placement
+// NEW: store selected supervisors per placement
 const [selectedSupervisors, setSelectedSupervisors] = useState({});
 
 const [showDropdown, setShowDropdown] = useState({});
@@ -29,7 +107,8 @@ const [newCriteria, setNewCriteria] = useState({
   max_score: "",
 });
 
-// 🔥 handle dropdown selection
+
+//  handle dropdown selection
 const handleSupervisorChange = (placementId, type, value) => {
   setSelectedSupervisors((prev) => ({
     ...prev,
@@ -40,7 +119,7 @@ const handleSupervisorChange = (placementId, type, value) => {
   }));
 };
 
-// 🔥 assign supervisors to placement
+//  assign supervisors to placement
 const assignSupervisors = async (placementId) => {
   const data = selectedSupervisors[placementId];
 
@@ -76,7 +155,7 @@ const fetchCriteria = async () => {
 
 
 
-  // 🔥 GROUP APPLICATIONS BY STUDENT
+  //  GROUP APPLICATIONS BY STUDENT
 const groupApplicationsByStudent = () => {
   const grouped = {};
 
@@ -148,16 +227,208 @@ const fetchSupervisors = async () => {
   };  
 
 
+  const createOrganization = async () => {
+  if (!orgForm.name || !orgForm.location) {
+    alert("Name and location are required");
+    return;
+  }
+
+  try {
+    const res = await API.post("organizations/", orgForm);
+
+    setOrganizations((prev) => [...prev, res.data]);
+
+    // reset form
+    setOrgForm({
+      name: "",
+      location: "",
+      email: "",
+      phone: "",
+      description: "",
+      website: "",
+    });
+
+    alert("Organization created!");
+  } catch (err) {
+    console.log(err.response?.data);
+    alert("Failed to create organization");
+  }
+};
+
+
 useEffect(() => {
   fetchApplications();
   fetchPlacements();
   fetchSupervisors();
-  fetchCriteria();   // ✅ ADD THIS LINE
+  fetchCriteria();  // ✅ ADD THIS LINE
+  fetchOrganizations();
+  
 }, []);
 
   return (
     <div>
       <h1>Admin Dashboard</h1>
+
+
+      <h2>Organizations</h2>
+
+<div
+  style={{
+    border: "1px solid #ccc",
+    padding: "15px",
+    marginBottom: "20px",
+    borderRadius: "8px",
+    background: "#f9f9f9",
+    maxWidth: "500px"
+  }}
+>
+  <h3>Add Organization</h3>
+
+  <input
+    type="text"
+    placeholder="Name"
+    value={orgForm.name}
+    onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
+  />
+  <br /><br />
+
+  <input
+    type="text"
+    placeholder="Location"
+    value={orgForm.location}
+    onChange={(e) => setOrgForm({ ...orgForm, location: e.target.value })}
+  />
+  <br /><br />
+
+  <input
+    type="email"
+    placeholder="Email"
+    value={orgForm.email}
+    onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })}
+  />
+  <br /><br />
+
+  <input
+    type="text"
+    placeholder="Phone"
+    value={orgForm.phone}
+    onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })}
+  />
+  <br /><br />
+
+  <textarea
+    placeholder="Description"
+    value={orgForm.description}
+    onChange={(e) =>
+      setOrgForm({ ...orgForm, description: e.target.value })
+    }
+  />
+  <br /><br />
+
+  <input
+    type="text"
+    placeholder="Website URL"
+    value={orgForm.website}
+    onChange={(e) =>
+      setOrgForm({ ...orgForm, website: e.target.value })
+    }
+  />
+  <br /><br />
+
+  <button onClick={createOrganization}>
+    Create Organization
+  </button>
+</div>
+
+
+<h3>Existing Organizations</h3>
+
+{organizations.length === 0 ? (
+  <p>No organizations yet</p>
+) : (
+  organizations.map((org) => (
+    <div
+      key={org.id}
+      style={{
+        border: "1px solid #ddd",
+        padding: "10px",
+        marginBottom: "10px",
+        borderRadius: "6px",
+        background: "#fff",
+      }}
+    >
+      {editingOrg === org.id ? (
+        <>
+          <input
+            value={editForm.name}
+            onChange={(e) =>
+              setEditForm({ ...editForm, name: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            value={editForm.location}
+            onChange={(e) =>
+              setEditForm({ ...editForm, location: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            value={editForm.email}
+            onChange={(e) =>
+              setEditForm({ ...editForm, email: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            value={editForm.phone}
+            onChange={(e) =>
+              setEditForm({ ...editForm, phone: e.target.value })
+            }
+          />
+          <br />
+
+          <textarea
+            value={editForm.description}
+            onChange={(e) =>
+              setEditForm({ ...editForm, description: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            value={editForm.website}
+            onChange={(e) =>
+              setEditForm({ ...editForm, website: e.target.value })
+            }
+          />
+          <br /><br />
+
+          <button onClick={() => saveEdit(org.id)}>Save</button>
+          <button onClick={() => setEditingOrg(null)}>Cancel</button>
+        </>
+      ) : (
+        <>
+          <p><strong>{org.name}</strong></p>
+          <p>{org.location}</p>
+          <p>{org.email}</p>
+          <p>{org.phone}</p>
+          <p>{org.description}</p>
+          <p>{org.website}</p>
+
+          <button onClick={() => startEdit(org)}>Edit</button>
+          <button onClick={() => deleteOrganization(org.id)}>
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  ))
+)}
+
 
       <h2>Global Evaluation Criteria (Admin Only)</h2>
 

@@ -7,6 +7,11 @@ function AcademicDashboard() {
   const [scores, setScores] = useState({});
   const [evaluations, setEvaluations] = useState([]);
 
+  // added during modification
+  const [logs, setLogs] = useState([]);
+  const [manualMarks, setManualMarks] = useState({});
+  const [activeLogs, setActiveLogs] = useState(null);
+
   // 🔹 Fetch placements assigned to academic supervisor
   const fetchPlacements = async () => {
     try {
@@ -58,54 +63,64 @@ function AcademicDashboard() {
     }
   };
 
+  //Added during modification
+  const fetchLogs = async () => {
+  try {
+    const res = await API.get("supervision/weeklylogs/", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    setLogs(res.data);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+
+  // 🔹 Submit FINAL evaluation
+
+const submitEvaluation = async (placementId) => {
+  try {
+    await API.post(
+      "supervision/evaluations/",
+      {
+        placement: placementId,
+        supervisor_type: "academic",
+        score: manualMarks[placementId] || 0,
+        comments: "Final academic evaluation",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    alert("Final Evaluation submitted!");
+  } catch (error) {
+    console.log(error.response?.data);
+    alert(JSON.stringify(error.response?.data));
+  }
+};
+
   useEffect(() => {
     fetchPlacements();
     fetchCriteria();
     fetchEvaluations();
+    fetchLogs();
+
   }, []);
+  /// added during
+  const submittedFinals = evaluations
+  .filter(ev => ev.supervisor_type === "academic")
+  .reduce((acc, ev) => {
+    acc[ev.placement] = true;
+    return acc;
+  }, {});
 
-  // 🔹 Handle input
-  const handleScoreChange = (placementId, criteriaId, value) => {
-    setScores((prev) => ({
-      ...prev,
-      [placementId]: {
-        ...prev[placementId],
-        [criteriaId]: parseInt(value),
-      },
-    }));
-  };
 
-  // 🔹 Submit FINAL evaluation
-  const submitEvaluation = async (placementId) => {
-    try {
-      const criteriaScores = Object.entries(scores[placementId] || {}).map(
-        ([criteriaId, score]) => ({
-          criteria: parseInt(criteriaId),
-          score: score,
-        })
-      );
-
-      await API.post(
-        "supervision/evaluations/",
-        {
-          placement: placementId,
-          supervisor_type: "academic",
-          comments: "Final academic evaluation",
-          criteria_scores: criteriaScores,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      alert("Final Evaluation submitted!");
-    } catch (error) {
-      console.log(error.response?.data);
-      alert(JSON.stringify(error.response?.data));
-    }
-  };
 
   return (
     <div style={{ padding: "20px" }}>
@@ -144,30 +159,74 @@ function AcademicDashboard() {
                 <p>No workplace evaluation yet</p>
               )}
 
-              {/* 🔹 ACADEMIC INPUT */}
-              <h4>Academic Evaluation</h4>
 
-              {criteria.map((c) => (
-                <div key={c.id}>
-                  <label>
-                    {c.name} (Max: {c.max_score})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={c.max_score}
-                    onChange={(e) =>
-                      handleScoreChange(p.id, c.id, e.target.value)
-                    }
-                  />
-                </div>
-              ))}
+
+
+
+{/* 🔹 VIEW LOGS BUTTON */}
+<button onClick={() => setActiveLogs(activeLogs === p.id ? null : p.id)}>
+  {activeLogs === p.id ? "Hide Weekly Logs" : "View Weekly Logs"}
+</button>
+{activeLogs === p.id && (
+  <div style={{ marginTop: "10px" }}>
+    <h4>Weekly Logs</h4>
+
+    {logs.filter(log => log.placement === p.id && log.status !== "draft").length > 0 ? (
+      logs
+        .filter(log => log.placement === p.id && log.status !== "draft")
+        .sort((a, b) => a.week_number - b.week_number)
+        .map(log => (
+          <div
+            key={log.id}
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              marginBottom: "10px",
+              borderRadius: "6px",
+              backgroundColor: "#f9f9f9"
+            }}
+          >
+            <p><strong>Week:</strong> {log.week_number}</p>
+            <p><strong>Tasks:</strong> {log.tasks}</p>
+            <p><strong>Challenges:</strong> {log.challenges || "None"}</p>
+            <p><strong>Attendance:</strong> {log.attendance_days} days</p>
+            <p><strong>Status:</strong> {log.status}</p>
+          </div>
+        ))
+    ) : (
+      <p>No logs yet</p>
+    )}
+  </div>
+)}
+
+
+              {/* 🔹 ACADEMIC INPUT */}
+            <h4>Academic Marks (Max: 20)</h4>
+
+<input
+  type="number"
+  min="0"
+  max="20"
+  value={manualMarks[p.id] || ""}
+  onChange={(e) =>
+    setManualMarks(prev => ({
+      ...prev,
+      [p.id]: Math.min(20, Math.max(0, parseInt(e.target.value) || 0))
+    }))
+  }
+/>
 
               <br />
 
-              <button onClick={() => submitEvaluation(p.id)}>
-                Submit Final Evaluation
-              </button>
+{!submittedFinals[p.id] ? (
+  <button onClick={() => submitEvaluation(p.id)}>
+    Submit Final Evaluation
+  </button>
+) : (
+  <p style={{ color: "green", fontWeight: "bold" }}>
+    ✅ Final Evaluation Submitted
+  </p>
+)}
             </div>
           );
         })

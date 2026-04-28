@@ -91,27 +91,32 @@ class EvaluationSerializer(serializers.ModelSerializer):
 
     # 🟢 Academic Supervisor → Manual score (20)
         elif evaluation.supervisor_type == 'academic':
-           evaluation.score = validated_data.get('score', 0)
+            manual_score = validated_data.get('score', 0)
+
+            if manual_score > 20:
+                 raise serializers.ValidationError("Academic score cannot exceed 20")
+
+            evaluation.score = manual_score
 
         # 🔥 ADD LOG SCORE
-           log_score = self.get_log_score(evaluation.placement)
+            log_score = self.get_log_score(evaluation.placement)
 
         # 🔥 GET workplace score
-           workplace_eval = Evaluation.objects.filter(
+            workplace_eval = Evaluation.objects.filter(
                placement=evaluation.placement,
                supervisor_type='workplace'
-            ).first()
-           if not workplace_eval:
+             ).first()
+            if not workplace_eval:
                raise serializers.ValidationError("Workplace evaluation must be completed first")
 
-           workplace_score = workplace_eval.score
+            workplace_score = workplace_eval.score
 
            
         # 🎯 FINAL CALCULATION
-           final = workplace_score + log_score + evaluation.score
+            final = workplace_score + log_score + evaluation.score
 
-           evaluation.final_grade = final
-           evaluation.is_final = True
+            evaluation.final_grade = final
+            evaluation.is_final = True
 
         evaluation.save()
         return evaluation

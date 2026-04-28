@@ -9,7 +9,6 @@ from .serializers import (
 )
 
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import AllowAny
 from accounts.permissions import IsStudentOrAcademic, IsEvaluator
 from rest_framework.response import Response
 from rest_framework import status
@@ -112,10 +111,10 @@ class EvaluationViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         user = request.user
 
-        # 🔥 ALLOW ONLY workplace supervisors
-        if user.role != "workplace":
+        # 🔥 ALLOW All supervisors
+        if user.role not in ["workplace","academic"]:
             return Response(
-                {"error": "Only workplace supervisors can submit evaluations"},
+                {"error": "Only supervisors can submit evaluations"},
                 status=status.HTTP_403_FORBIDDEN
             )
 

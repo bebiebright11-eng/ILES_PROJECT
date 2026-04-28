@@ -159,7 +159,7 @@ const handleScoreChange = (placementId, criteriaId, value, maxScore) => {
 };
 
 return (
-  <div style={{ padding: "50px", fontFamily: "Arial", position: "relative" }}>
+  <div style={{ padding: "20px", fontFamily: "Arial", position: "relative" }}>
 
     <h1 style={{ textAlign: "center" }}>
       Workplace Dashboard
@@ -169,7 +169,7 @@ return (
 
     {/* 🔹 MENU BUTTON */}
     <div
-      style={{ cursor: "pointer", marginBottom: "10px" }}
+      style={{ cursor: "pointer",marginLeft:"20px", marginBottom: "10px",textAlign: "left" }}
       onClick={() => setShowMenu(!showMenu)}
     >
       ☰ Menu
