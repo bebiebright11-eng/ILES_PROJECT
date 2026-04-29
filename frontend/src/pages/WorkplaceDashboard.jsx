@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 import API from "../api";
 
 function WorkplaceDashboard() {
@@ -10,6 +11,10 @@ function WorkplaceDashboard() {
 const [activeEvaluation, setActiveEvaluation] = useState(null);
 const [submittedEvaluations, setSubmittedEvaluations] = useState({});
 const [comments, setComments] = useState({});
+const menuRef = useRef();
+
+const [existingEvaluations, setExistingEvaluations] = useState({});
+
 
 
 //Ui design
@@ -49,7 +54,7 @@ const pendingStudents = totalStudents - evaluatedStudents;
         },
       });
 
-      setCriteria(res.data);
+      setCriteria(res.data.filter(c => c.is_active)); // Only fetch active criterias
     } catch (error) {
       console.log(error);
     }
@@ -66,7 +71,20 @@ const pendingStudents = totalStudents - evaluatedStudents;
   useEffect(() => {
     fetchPlacements();
     fetchCriteria();
+    fetchEvaluations();
+      const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setShowMenu(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
   }, []);
+
+  
 
   // 🔹 Handle input change
 const handleScoreChange = (placementId, criteriaId, value, maxScore) => {
@@ -158,15 +176,35 @@ const handleScoreChange = (placementId, criteriaId, value, maxScore) => {
 }
 };
 
+const fetchEvaluations = async () => {
+  const res = await API.get("supervision/evaluations/", {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  });
+
+  const map = {};
+  res.data.forEach((e) => {
+    map[e.placement] = e;
+  });
+
+  setExistingEvaluations(map);
+};
+
+
 return (
   <div style={{ padding: "20px", fontFamily: "Arial", position: "relative" }}>
-
     <h1 style={{ textAlign: "center" }}>
-      Workplace Dashboard
+  INTERNSHIP PLACEMENT SYSTEM (ILES)
     </h1>
+    <h2 style={{ textAlign: "center" }}>
+      Workplace Dashboard
+    </h2>
 
     <p>Welcome, {localStorage.getItem("username")}</p>
 
+
+    <div ref={menuRef}>
     {/* 🔹 MENU BUTTON */}
     <div
       style={{ cursor: "pointer",marginLeft:"20px", marginBottom: "10px",textAlign: "left" }}
@@ -178,17 +216,17 @@ return (
     {/* 🔹 POPUP MENU */}
     {showMenu && (
       <div
-        style={{
-          position: "absolute",
-          top: "100px",
-          left: "20px",
-          width: "200px",
-          backgroundColor: "white",
-          border: "1px solid black",
-          padding: "10px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-          zIndex: 1000,
-        }}
+          style={{
+            position: "absolute",
+            marginTop: "10px",
+            background: "white",
+            border: "1px solid #f35f5f",
+            padding: "10px",
+            width: "250px",
+            boxShadow: "0px 2px 8px rgba(0,0,0,0.2)",
+            borderRadius: "8px",
+            zIndex: 999,
+          }}
       >
         <p>🏠 Home</p>
         <p>👨‍🎓 My Students</p>
@@ -196,6 +234,8 @@ return (
         <p>👤 Profile</p>
       </div>
     )}
+    </div>
+
 
     {/* 🔹 SUMMARY CARDS */}
     <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
@@ -229,13 +269,13 @@ return (
 
           {/* ADD BUTTON */}
           {!submittedEvaluations[p.id] && (
-            <button onClick={() => setActiveEvaluation(p.id)}>
-              Add Evaluation
-            </button>
+         <button onClick={() => setActiveEvaluation(p.id)}>
+           {existingEvaluations[p.id] ? "Edit Evaluation" : "Add Evaluation"}
+          </button>
           )}
 
           {/* FORM */}
-          {activeEvaluation === p.id && !submittedEvaluations[p.id] && (
+          {activeEvaluation === p.id && (
             <div style={{
               marginTop: "15px",
               padding: "15px",
@@ -294,10 +334,10 @@ return (
           )}
 
           {/* AFTER SUBMIT */}
-          {submittedEvaluations[p.id] && (
+          {existingEvaluations[p.id] && (
             <p style={{ color: "green" }}>
-              ✅ Evaluation Submitted
-            </p>
+              ✅ Evaluation submitted (You can edit)
+           </p>
           )}
 
         </div>
