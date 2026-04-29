@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import { useRef } from "react";
 import API from "../api";
 
 function AdminDashboard() {
@@ -8,11 +9,15 @@ function AdminDashboard() {
 
 
 const [organizations, setOrganizations] = useState([]);
+const [activePage, setActivePage] = useState("home");
+const [isMenuOpen, setIsMenuOpen] = useState(false);
+const menuRef = useRef();
+
 
 const [orgForm, setOrgForm] = useState({
   name: "",
   location: "",
-  email: "",
+  contact_email: "",
   phone: "",
   description: "",
   website: "",
@@ -23,7 +28,7 @@ const [editingOrg, setEditingOrg] = useState(null);
 const [editForm, setEditForm] = useState({
   name: "",
   location: "",
-  email: "",
+  contact_email: "",
   phone: "",
   description: "",
   website: "",
@@ -34,16 +39,28 @@ const startEdit = (org) => {
   setEditForm({
     name: org.name,
     location: org.location,
-    email: org.email,
+    contact_email: org.contact_email,
     phone: org.phone,
     description: org.description,
     website: org.website,
   });
 };
 
+const cardStyle = {
+  border: "1px solid #d8a7d8",
+  padding: "15px",
+  borderRadius: "10px",
+  width: "150px",
+  textAlign: "center",
+  background: "#e8c6e8",
+  fontWeight: "bold"
+};
+
+
+
 const saveEdit = async (id) => {
   try {
-    const res = await API.patch(`organizations/${id}/`, editForm);
+    const res = await API.patch(`internships/organizations/${id}/`, editForm);
 
     // update UI instantly
     setOrganizations((prev) =>
@@ -63,7 +80,7 @@ const deleteOrganization = async (id) => {
   if (!confirmDelete) return;
 
   try {
-    await API.delete(`organizations/${id}/`);
+    await API.delete(`internships/organizations/${id}/`);
 
     // remove from UI instantly
     setOrganizations((prev) => prev.filter((org) => org.id !== id));
@@ -234,7 +251,7 @@ const fetchSupervisors = async () => {
   }
 
   try {
-    const res = await API.post("organizations/", orgForm);
+    const res = await API.post("internships/organizations/", orgForm);
 
     setOrganizations((prev) => [...prev, res.data]);
 
@@ -242,7 +259,7 @@ const fetchSupervisors = async () => {
     setOrgForm({
       name: "",
       location: "",
-      email: "",
+      contact_email: "",
       phone: "",
       description: "",
       website: "",
@@ -250,9 +267,11 @@ const fetchSupervisors = async () => {
 
     alert("Organization created!");
   } catch (err) {
-    console.log(err.response?.data);
-    alert("Failed to create organization");
-  }
+  console.log("FULL ERROR:", err.response);
+  console.log("ERROR DATA:", err.response?.data);
+
+  alert(JSON.stringify(err.response?.data));
+}
 };
 
 
@@ -262,15 +281,114 @@ useEffect(() => {
   fetchSupervisors();
   fetchCriteria();  // ✅ ADD THIS LINE
   fetchOrganizations();
+    const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setIsMenuOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
   
 }, []);
 
   return (
-    <div>
-      <h1>Admin Dashboard</h1>
+    <>
+    <div style={{
+  textAlign: "centre",
+  padding: "20px"
+}}>
+  <h1>Internship Placement System (ILES)</h1>
+  <h2>Admin Dashboard</h2>
+  <p>Welcome, user</p>
+</div>
 
+ {/* MENU BAR */}
+<div
+  ref={menuRef}
+  style={{
+    position: "relative",
+    display: "inline-block",
+    marginLeft : "0px",
+    marginTop: "10px",
+    float: "left"
+  }}
+>
+<button
+  onClick={() => setIsMenuOpen(!isMenuOpen)}
+  style={{
+    fontSize: "22px",
+    background: "none",
+    border: "none",
+    cursor: "pointer"
+  }}
+>
+  ☰
+</button>
 
-      <h2>Organizations</h2>
+  <span style={{ marginLeft: "10px", fontWeight: "bold" }}>
+    Menu
+  </span>
+
+  {/* MENU dropdown ITEMS*/}
+  {isMenuOpen && (
+  <div
+    style={{
+      position: "absolute",
+      top: "45px",   // 👈 pushes it BELOW button
+      left: "0",
+      background: "white",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      padding: "10px",
+      width: "180px",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+      zIndex: 1000
+    }}
+  >
+    <p onClick={() => { setActivePage("home"); setIsMenuOpen(false); }} style={{ cursor: "pointer" }}>Home</p>
+    <p onClick={() => { setActivePage("organizations"); setIsMenuOpen(false); }} style={{ cursor: "pointer" }}>Organizations</p>
+    <p onClick={() => { setActivePage("applications"); setIsMenuOpen(false); }} style={{ cursor: "pointer" }}>Applications</p>
+    <p onClick={() => { setActivePage("placements"); setIsMenuOpen(false); }} style={{ cursor: "pointer" }}>Placements</p>
+  </div>
+)}
+</div>
+
+  {/* 🔷 SUMMARY CARDS */}
+<div style={{
+  display: "flex",
+  gap: "15px",
+  justifyContent: "center",
+  margin: "20px 0"
+}}>
+    <div style={cardStyle}>
+      <h4>Organizations</h4>
+      <p>{organizations.length}</p>
+    </div>
+
+    <div style={cardStyle}>
+      <h4>Active Placements</h4>
+      <p>{placements.filter(p => p.status === "active").length}</p>
+    </div>
+
+    <div style={cardStyle}>
+      <h4>Pending Students</h4>
+      <p>{applications.filter(a => a.status === "pending").length}</p>
+    </div>
+
+    <div style={cardStyle}>
+      <h4>Approved</h4>
+      <p>{applications.filter(a => a.status === "approved").length}</p>
+    </div>
+  </div>
+
+{activePage === "home" && (
+  <>
+    <h2> Register Organization</h2>
+    {/* KEEP your existing createOrganization form here */}
 
 <div
   style={{
@@ -303,8 +421,8 @@ useEffect(() => {
   <input
     type="email"
     placeholder="Email"
-    value={orgForm.email}
-    onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })}
+    value={orgForm.contact_email}
+    onChange={(e) => setOrgForm({ ...orgForm, contact_email: e.target.value })}
   />
   <br /><br />
 
@@ -340,97 +458,9 @@ useEffect(() => {
   </button>
 </div>
 
-
-<h3>Existing Organizations</h3>
-
-{organizations.length === 0 ? (
-  <p>No organizations yet</p>
-) : (
-  organizations.map((org) => (
-    <div
-      key={org.id}
-      style={{
-        border: "1px solid #ddd",
-        padding: "10px",
-        marginBottom: "10px",
-        borderRadius: "6px",
-        background: "#fff",
-      }}
-    >
-      {editingOrg === org.id ? (
-        <>
-          <input
-            value={editForm.name}
-            onChange={(e) =>
-              setEditForm({ ...editForm, name: e.target.value })
-            }
-          />
-          <br />
-
-          <input
-            value={editForm.location}
-            onChange={(e) =>
-              setEditForm({ ...editForm, location: e.target.value })
-            }
-          />
-          <br />
-
-          <input
-            value={editForm.email}
-            onChange={(e) =>
-              setEditForm({ ...editForm, email: e.target.value })
-            }
-          />
-          <br />
-
-          <input
-            value={editForm.phone}
-            onChange={(e) =>
-              setEditForm({ ...editForm, phone: e.target.value })
-            }
-          />
-          <br />
-
-          <textarea
-            value={editForm.description}
-            onChange={(e) =>
-              setEditForm({ ...editForm, description: e.target.value })
-            }
-          />
-          <br />
-
-          <input
-            value={editForm.website}
-            onChange={(e) =>
-              setEditForm({ ...editForm, website: e.target.value })
-            }
-          />
-          <br /><br />
-
-          <button onClick={() => saveEdit(org.id)}>Save</button>
-          <button onClick={() => setEditingOrg(null)}>Cancel</button>
-        </>
-      ) : (
-        <>
-          <p><strong>{org.name}</strong></p>
-          <p>{org.location}</p>
-          <p>{org.email}</p>
-          <p>{org.phone}</p>
-          <p>{org.description}</p>
-          <p>{org.website}</p>
-
-          <button onClick={() => startEdit(org)}>Edit</button>
-          <button onClick={() => deleteOrganization(org.id)}>
-            Delete
-          </button>
-        </>
-      )}
-    </div>
-  ))
-)}
-
-
-      <h2>Global Evaluation Criteria (Admin Only)</h2>
+    <h2>Create Criteria</h2>
+    {/* KEEP your criteria table here */}
+         <h2>Global Evaluation Criteria (Admin Only)</h2>
 
 <table border="1" cellPadding="10" style={{ marginTop: "10px",marginLeft:"30px" }}>
   <thead>
@@ -485,6 +515,7 @@ useEffect(() => {
       await API.patch(`supervision/criteria/${c.id}/`, {
         name: c.name,
         max_score: Number(c.max_score),
+        is_active: true,  // Added for save button
       });
 
       setSavedRows((prev) => ({
@@ -588,13 +619,115 @@ useEffect(() => {
   </tbody>
 </table>
 
+  </>
+)}
+
+{activePage === "organizations" && (
+  <>
+    <h2>Organizations</h2>
+    {/* KEEP your existing organizations list here */}
+{organizations.length === 0 ? (
+  <p>No organizations yet</p>
+) : (
+  organizations.map((org) => (
+    <div
+      key={org.id}
+      style={{
+        border: "1px solid #ddd",
+        padding: "10px",
+        marginBottom: "10px",
+        borderRadius: "6px",
+        background: "#fff",
+      }}
+    >
+      {editingOrg === org.id ? (
+        <>
+          <input
+            placeholder= "Name"
+            value={editForm.name || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, name: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            placeholder= "location"
+            value={editForm.location || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, location: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            placeholder= "Email"
+            value={editForm.contact_email || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, contact_email: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            placeholder = "phone number"
+            value={editForm.phone || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, phone: e.target.value })
+            }
+          />
+          <br />
+
+          <textarea
+            placeholder = "description"
+            value={editForm.description || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, description: e.target.value })
+            }
+          />
+          <br />
+
+          <input
+            placeholder = "website URL"
+            value={editForm.website || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, website: e.target.value })
+            }
+          />
+          <br /><br />
+
+          <button onClick={() => saveEdit(org.id)}>Save</button>
+          <button onClick={() => setEditingOrg(null)}>Cancel</button>
+        </>
+      ) : (
+        <>
+          <p><strong>{org.name}</strong></p>
+          <p>{org.location}</p>
+          <p>{org.contact_email}</p>
+          <p>{org.phone}</p>
+          <p>{org.description}</p>
+          <p>{org.website}</p>
+
+          <button onClick={() => startEdit(org)}>Edit</button>
+          <button onClick={() => deleteOrganization(org.id)}>
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  ))
+)}
+
+  </>
+)}
 
 
+  {activePage === "applications" && (
+  <>
+    <h2>Applications</h2>
+    {/* KEEP your existing organizations list here */}
 
-      <h2>Applications</h2>
-
-
-{applications.length === 0 ? (
+    {applications.length === 0 ? (
   <p>No applications yet</p>
 ) : (
   Object.entries(groupApplicationsByStudent()).map(([student, apps]) => (
@@ -729,8 +862,13 @@ useEffect(() => {
     </div>
   ))
 )}
+  </>
+)}   
 
-      <h2>Placements</h2>
+{activePage === "placements" && (
+  <>
+    <h2>Placements</h2>
+    {/* KEEP your placements section here */}
 
     {placements.length === 0 ? (
       <p>No placements yet</p>
@@ -913,8 +1051,13 @@ useEffect(() => {
     })
   )}
 
-    </div>    
-  );
+
+
+  </>
+)}
+  
+  </> 
+);
 }
 
 export default AdminDashboard;
