@@ -16,6 +16,7 @@ class User(AbstractUser):
       # ✅ ADD THESE
     email = models.EmailField(max_length=255, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True)
+    is_activated = models.BooleanField(default=False)
 
     # 🔥 link supervisor to organization
     organization = models.ForeignKey(

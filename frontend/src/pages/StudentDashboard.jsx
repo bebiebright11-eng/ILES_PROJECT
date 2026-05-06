@@ -15,6 +15,7 @@ function StudentDashboard() {
   const [organizations, setOrganizations] = useState([]);
   // NEW: Store student's placement 
   const [placement, setPlacement] = useState(null);
+  const firstName = localStorage.getItem("first_name");
 
 
 
@@ -214,7 +215,7 @@ const submitLog = async (e) => {
        <h2 style={{ marginBottom: "5px" }}>Student Dashboard</h2>
 
        <p style={{ fontWeight: "bold", marginTop: "10px" }}>
-          Welcome, Student
+          Welcome,  {firstName || "Student"} 👋
        </p>
 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
   

@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 
 import Login from "./pages/Login";
+import ActivateAccount from "./pages/ActivateAccount";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import WorkplaceDashboard from "./pages/WorkplaceDashboard";
@@ -13,6 +14,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/activate" element={<ActivateAccount />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/student" element={<StudentDashboard />} />
       <Route path="/workplace" element={<WorkplaceDashboard />} />
